@@ -81,6 +81,7 @@ void set_root_ast_node(struct AstNode *root_to_set) {
 
 void print_ast_node_internal(struct AstNode *node, int level) {
     if (node == NULL) {
+        printf("NULL\n");
         return;
     }
 
@@ -102,7 +103,7 @@ void print_ast_node_internal(struct AstNode *node, int level) {
             sprintf(value, "%f", node->value.float_value);
             break;
         case ANT_STRING:
-            sprintf(value, "\"%s\"", node->value.string_value);
+            sprintf(value, "\'%s\'", node->value.string_value);
             break;
         case ANT_IDENTIFIER:
             sprintf(value, "%s", node->value.string_value);

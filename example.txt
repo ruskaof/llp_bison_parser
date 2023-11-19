@@ -1,1 +1,6 @@
-from a in b where c > 3 select d
+from a in b where c.a > 3 && f.a.Contains("aaa") select d;
+from a in b where true || (false && true) select d;
+
+insert into a values (1, "string", true, 3.14);
+update a set a.a = 1;
+delete from a where a.a == "fsad";

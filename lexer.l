@@ -8,10 +8,11 @@
 %}
 
 
-identifier [a-zA-Z]+[.]?[a-zA-Z]*
+identifier [a-zA-Z]+
 double [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
 integer [-+]?[0-9]+
 boolean true|false
+quoted_string \"[^\"]*\"
 
 %%
 
@@ -24,11 +25,13 @@ boolean true|false
 "on" { return TOKEN_ON; }
 "equals" { return TOKEN_EQUALS; }
 "into" { return TOKEN_INTO; }
-"ascending" { return TOKEN_ASCENDING; }
-"descending" { return TOKEN_DESCENDING; }
 "select" { return TOKEN_SELECT; }
-"group" { return TOKEN_GROUP; }
-"by" { return TOKEN_BY; }
+"Contains" { return TOKEN_CONTAINS; }
+"insert" { return TOKEN_INSERT; }
+"values" { return TOKEN_VALUES; }
+"update" { return TOKEN_UPDATE; }
+"set" { return TOKEN_SET; }
+"delete" { return TOKEN_DELETE; }
 "(" { return TOKEN_PAR_OPEN; }
 ")" { return TOKEN_PAR_CLOSE; }
 "," { return TOKEN_COMMA; }
@@ -46,6 +49,12 @@ boolean true|false
 "*" { return TOKEN_TIMES; }
 "/" { return TOKEN_DIVIDE; }
 "!" { return TOKEN_NOT; }
+"." { return TOKEN_DOT; }
+
+{boolean} {
+    yylval.bval = (strcmp(yytext, "true") == 0);
+    return TOKEN_BOOLEAN;
+}
 
 {identifier} {
     yylval.sval = strdup(yytext);
@@ -62,9 +71,9 @@ boolean true|false
     return TOKEN_DOUBLE;
 }
 
-{boolean} {
-    yylval.bval = (strcmp(yytext, "true") == 0);
-    return TOKEN_BOOLEAN;
+{quoted_string} {
+    yylval.sval = strdup(yytext);
+    return TOKEN_QUOTED_STRING;
 }
 
 [ \t\n] ;
