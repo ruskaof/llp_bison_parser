@@ -4,18 +4,19 @@
     #include <stdlib.h>
     #include <stdbool.h>
     #include "parser.h"
+    #include "../ast.h"
 %}
 
 
 identifier [a-zA-Z]+[.]?[a-zA-Z]*
 double [-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?
 integer [-+]?[0-9]+
+boolean true|false
 
 %%
 
 "from" { return TOKEN_FROM; }
 "in" { return TOKEN_IN; }
-"let" { return TOKEN_LET; }
 "=" { return TOKEN_EQ; }
 "==" { return TOKEN_EQ_OP; }
 "where" { return TOKEN_WHERE; }
@@ -23,7 +24,6 @@ integer [-+]?[0-9]+
 "on" { return TOKEN_ON; }
 "equals" { return TOKEN_EQUALS; }
 "into" { return TOKEN_INTO; }
-"orderby" { return TOKEN_ORDERBY; }
 "ascending" { return TOKEN_ASCENDING; }
 "descending" { return TOKEN_DESCENDING; }
 "select" { return TOKEN_SELECT; }
@@ -62,7 +62,14 @@ integer [-+]?[0-9]+
     return TOKEN_DOUBLE;
 }
 
+{boolean} {
+    yylval.bval = (strcmp(yytext, "true") == 0);
+    return TOKEN_BOOLEAN;
+}
+
 [ \t\n] ;
+
+";" { return END_OF_STATEMENT; }
 
 . { printf("Unrecognized character: %s\n", yytext); }
 

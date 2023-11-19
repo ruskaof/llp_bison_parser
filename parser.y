@@ -4,6 +4,8 @@
     #include <stdio.h>
     #include <math.h>
     #include <stdbool.h>
+    #include "../ast.h"
+    #include "parser.h"
     extern void yyerror (char const *);
     extern int yylex(void);
 %}
@@ -12,6 +14,7 @@
     double dval;
     int ival;
     bool bval;
+    struct AstNode *ast_node;
 }
 
 // base
@@ -20,14 +23,12 @@
 // keywords
 %token TOKEN_FROM
 %token TOKEN_IN
-%token TOKEN_LET
 %token TOKEN_EQ
 %token TOKEN_WHERE
 %token TOKEN_JOIN
 %token TOKEN_ON
 %token TOKEN_EQUALS
 %token TOKEN_INTO
-%token TOKEN_ORDERBY
 %token TOKEN_ASCENDING
 %token TOKEN_DESCENDING
 %token TOKEN_SELECT
@@ -60,124 +61,117 @@
 %type <dval> TOKEN_DOUBLE
 %type <ival> TOKEN_INTEGER
 %type <bval> TOKEN_BOOLEAN
+%type <ast_node> boolean_expression
+%type <ast_node> expression
+%type <ast_node> query_expression
+%type <ast_node> from_clause
+%type <ast_node> query_body
+%type <ast_node> query_body_clauses
+%type <ast_node> query_body_clause
+%type <ast_node> where_clause
+%type <ast_node> join_clause
+%type <ast_node> join_into_clause
+%type <ast_node> select_clause
+%type <ast_node> group_clause
+%type <ast_node> query_continuation
+
+// end of statement
+%token END_OF_STATEMENT
 
 %%
 
 query_expression
     : from_clause query_body {
-        
+     $$ = create_ast_node(ANT_SELECT_QUERY, 2, $1, $2);
+     print_ast_node($$);
     }
     ;
 
 from_clause
-    : TOKEN_FROM TOKEN_IDENTIFIER TOKEN_IN expression
+    : TOKEN_FROM TOKEN_IDENTIFIER TOKEN_IN expression {
+        printf("from clause\n");
+        struct AstNode *identifier = create_identifier_ast_node($2);
+        printf("identifier\n");
+        print_ast_node(identifier);
+        printf("expression\n");
+        print_ast_node($4);
+        $$ = create_ast_node(ANT_FROM, 2, identifier, $4);
+    }
     ;
 
 query_body
-    : query_body_clauses select_or_group_clause query_continuation
+    : query_body_clauses select_clause {
+        printf("query body\n");
+        printf("query body clauses\n");
+        print_ast_node($1);
+        printf("select clause\n");
+        print_ast_node($2);
+        $$ = create_ast_node(ANT_QUERY_BODY, 2, $1, $2);
+    }
     ;
 
 query_body_clauses
-    : query_body_clause
-    | query_body_clauses query_body_clause
-    | /* empty */
+    : query_body_clause {
+        printf("query body clauses\n");
+        $$ = $1;
+    }
+    | query_body_clauses query_body_clause { $$ = create_ast_node(ANT_QUERY_BODY_CLAUSES, 2, $1, $2); }
     ;
 
 query_body_clause
-    : from_clause
-    | let_clause
-    | where_clause
-    | join_clause
-    | join_into_clause
-    | orderby_clause
-    ;
-
-let_clause
-    : TOKEN_LET TOKEN_IDENTIFIER TOKEN_EQ expression
+    : from_clause { $$ = $1; }
+    | where_clause { $$ = $1; }
+    | join_clause { $$ = $1; }
     ;
 
 where_clause
-    : TOKEN_WHERE boolean_expression
+    : TOKEN_WHERE boolean_expression {
+        printf("where clause\n");
+        printf("boolean expression\n");
+        print_ast_node($2);
+        $$ = create_ast_node(ANT_WHERE, 1, $2);
+    }
     ;
 
 join_clause
-    : TOKEN_JOIN TOKEN_IDENTIFIER TOKEN_IN expression TOKEN_ON expression TOKEN_EQUALS expression
-    ;
-
-join_into_clause
-    : TOKEN_JOIN TOKEN_IDENTIFIER TOKEN_IN expression TOKEN_ON expression TOKEN_EQUALS expression TOKEN_INTO TOKEN_IDENTIFIER
-    ;
-
-orderby_clause
-    : TOKEN_ORDERBY orderings
-    ;
-
-orderings
-    : ordering
-    : orderings TOKEN_COMMA ordering
-    ;
-
-ordering
-    : expression ordering_direction
-    ;
-
-ordering_direction
-    : TOKEN_ASCENDING
-    | TOKEN_DESCENDING
-    | /* empty */
-    ;
-
-select_or_group_clause
-    : select_clause
-    | group_clause
+    : TOKEN_JOIN TOKEN_IDENTIFIER TOKEN_IN expression TOKEN_ON expression TOKEN_EQUALS expression {
+        struct AstNode *join_in = create_ast_node(ANT_JOIN_IN, 2, $2, $4);
+        struct AstNode *join_on = create_ast_node(ANT_JOIN_ON, 2, $6, $8);
+        $$ = create_ast_node(ANT_JOIN, 2, join_in, join_on);
+    }
     ;
 
 select_clause
-    : TOKEN_SELECT expression
-    ;
-
-group_clause
-    : TOKEN_GROUP expression TOKEN_BY expression
-    ;
-
-query_continuation
-    : TOKEN_INTO TOKEN_IDENTIFIER query_body
-    | /* empty */
+    : TOKEN_SELECT expression {
+        printf("select clause\n");
+        $$ = create_ast_node(ANT_SELECT, 1, $2);
+    }
     ;
 
 expression
-    : TOKEN_IDENTIFIER
-    | TOKEN_DOUBLE
-    | TOKEN_INTEGER
-    | TOKEN_PAR_OPEN expression TOKEN_PAR_CLOSE
-    | expression TOKEN_PLUS expression
-    | expression TOKEN_MINUS expression
-    | expression TOKEN_TIMES expression
-    | expression TOKEN_DIVIDE expression
-    | expression TOKEN_MOD expression
-    | TOKEN_IDENTIFIER TOKEN_PAR_OPEN expression TOKEN_PAR_CLOSE
+    : TOKEN_IDENTIFIER { $$ = create_identifier_ast_node($1); }
+    | boolean_expression { $$ = $1; }
+    | TOKEN_DOUBLE { $$ = create_double_literal_ast_node($1); }
+    | TOKEN_INTEGER { $$ = create_int_literal_ast_node($1); }
+    | TOKEN_PAR_OPEN expression TOKEN_PAR_CLOSE { $$ = $2; }
+    | expression TOKEN_PLUS expression { $$ = create_ast_node(ANT_PLUS, 2, $1, $3); }
+    | expression TOKEN_MINUS expression { $$ = create_ast_node(ANT_MINUS, 2, $1, $3); }
+    | expression TOKEN_TIMES expression { $$ = create_ast_node(ANT_TIMES, 2, $1, $3); }
+    | expression TOKEN_DIVIDE expression { $$ = create_ast_node(ANT_DIVIDE, 2, $1, $3); }
+    ;
 
 boolean_expression
-    : TOKEN_IDENTIFIER
-    | TOKEN_DOUBLE
-    | TOKEN_INTEGER
-    | TOKEN_PAR_OPEN boolean_expression TOKEN_PAR_CLOSE
-    | boolean_expression TOKEN_EQ_OP boolean_expression
-    | boolean_expression TOKEN_PLUS boolean_expression
-    | boolean_expression TOKEN_MINUS boolean_expression
-    | boolean_expression TOKEN_TIMES boolean_expression
-    | boolean_expression TOKEN_DIVIDE boolean_expression
-    | boolean_expression TOKEN_MOD boolean_expression
-    | boolean_expression TOKEN_AND boolean_expression
-    | boolean_expression TOKEN_OR boolean_expression
-    | boolean_expression TOKEN_EQUALS boolean_expression
-    | boolean_expression TOKEN_LE boolean_expression
-    | boolean_expression TOKEN_GE boolean_expression
-    | boolean_expression TOKEN_LT boolean_expression
-    | boolean_expression TOKEN_GT boolean_expression
-    | boolean_expression TOKEN_NE boolean_expression
-    | TOKEN_IDENTIFIER TOKEN_PAR_OPEN boolean_expression TOKEN_PAR_CLOSE
-    | TOKEN_NOT boolean_expression
+    : TOKEN_IDENTIFIER { $$ = create_identifier_ast_node($1); }
+    | TOKEN_PAR_OPEN boolean_expression TOKEN_PAR_CLOSE { $$ = $2; }
+    | boolean_expression TOKEN_EQ_OP boolean_expression { $$ = create_ast_node(ANT_EQ_OP, 2, $1, $3); }
+    | boolean_expression TOKEN_AND boolean_expression { $$ = create_ast_node(ANT_AND, 2, $1, $3); }
+    | boolean_expression TOKEN_OR boolean_expression { $$ = create_ast_node(ANT_OR, 2, $1, $3); }
+    | expression TOKEN_LE expression { $$ = create_ast_node(ANT_LE, 2, $1, $3); }
+    | expression TOKEN_GE expression { $$ = create_ast_node(ANT_GE, 2, $1, $3); }
+    | expression TOKEN_LT expression { $$ = create_ast_node(ANT_LT, 2, $1, $3); }
+    | expression TOKEN_GT expression { $$ = create_ast_node(ANT_GT, 2, $1, $3); }
+    | expression TOKEN_NE expression { $$ = create_ast_node(ANT_NE, 2, $1, $3); }
+    | TOKEN_NOT boolean_expression { $$ = create_ast_node(ANT_NOT, 1, $2); }
     ;
 
 %%

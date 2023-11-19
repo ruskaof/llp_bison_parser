@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "ast.h"
 
 extern int yyparse();
 
@@ -13,4 +14,6 @@ int yywrap() { return (1); }
 int main() {
     yyin = stdin;
     yyparse();
+    print_ast_node(get_root_ast_node());
+    free_ast_node(get_root_ast_node());
 }
