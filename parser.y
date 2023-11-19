@@ -83,38 +83,25 @@
 query_expression
     : from_clause query_body {
      $$ = create_ast_node(ANT_SELECT_QUERY, 2, $1, $2);
-     print_ast_node($$);
+     set_root_ast_node($$);
     }
     ;
 
 from_clause
     : TOKEN_FROM TOKEN_IDENTIFIER TOKEN_IN expression {
-        printf("from clause\n");
         struct AstNode *identifier = create_identifier_ast_node($2);
-        printf("identifier\n");
-        print_ast_node(identifier);
-        printf("expression\n");
-        print_ast_node($4);
         $$ = create_ast_node(ANT_FROM, 2, identifier, $4);
     }
     ;
 
 query_body
     : query_body_clauses select_clause {
-        printf("query body\n");
-        printf("query body clauses\n");
-        print_ast_node($1);
-        printf("select clause\n");
-        print_ast_node($2);
         $$ = create_ast_node(ANT_QUERY_BODY, 2, $1, $2);
     }
     ;
 
 query_body_clauses
-    : query_body_clause {
-        printf("query body clauses\n");
-        $$ = $1;
-    }
+    : query_body_clause { $$ = $1; }
     | query_body_clauses query_body_clause { $$ = create_ast_node(ANT_QUERY_BODY_CLAUSES, 2, $1, $2); }
     ;
 
@@ -125,12 +112,7 @@ query_body_clause
     ;
 
 where_clause
-    : TOKEN_WHERE boolean_expression {
-        printf("where clause\n");
-        printf("boolean expression\n");
-        print_ast_node($2);
-        $$ = create_ast_node(ANT_WHERE, 1, $2);
-    }
+    : TOKEN_WHERE boolean_expression { $$ = create_ast_node(ANT_WHERE, 1, $2); }
     ;
 
 join_clause
@@ -142,10 +124,7 @@ join_clause
     ;
 
 select_clause
-    : TOKEN_SELECT expression {
-        printf("select clause\n");
-        $$ = create_ast_node(ANT_SELECT, 1, $2);
-    }
+    : TOKEN_SELECT expression { $$ = create_ast_node(ANT_SELECT, 1, $2); }
     ;
 
 expression
