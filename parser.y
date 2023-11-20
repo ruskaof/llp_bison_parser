@@ -154,7 +154,6 @@ delete_query
     : TOKEN_DELETE TOKEN_FROM TOKEN_IDENTIFIER TOKEN_WHERE boolean_expression {
         struct AstNode *delete_from = create_ast_node(ANT_DELETE_FROM, 1, create_identifier_ast_node($3));
         struct AstNode *delete_where = create_ast_node(ANT_DELETE_WHERE, 1, $5);
-        printf("setting delete query\n");
         $$ = create_ast_node(ANT_DELETE_QUERY, 2, delete_from, delete_where);
     }
 

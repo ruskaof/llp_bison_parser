@@ -1,6 +1,5 @@
-from a in b where c.a > 3 && f.a.Contains("aaa") select d;
-from a in b where true || (false && true) select d;
-
-insert into a values (1, "string", true, 3.14);
-update a set a.a = 1;
-delete from a where a.a == "fsad";
+from varname in collection join anothervar in anothercoll on varname.x equals anothervar.y where varname.f > 3 && varname.a.Contains("aaa") select anothervar.hhh;
+from person in persons where true || (false && true) select person;
+insert into student values (1, "string", true, 3.14);
+update pets set pet.name = "Tom";
+delete from students where student.age >= 30;
